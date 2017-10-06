@@ -1,0 +1,214 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: content: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+    <script src="components/loader.js"></script>
+    <link rel="stylesheet" href="components/loader.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+    //都道府県のリストをセットするfunction
+        function set_pref_list() {
+            $.ajax({
+                url: 'http://javascriptajax.azurewebsites.net/yano/get_pref.php?',
+                type: 'GET',
+                dataType: 'json'
+
+            }).done(function (data) { //ajaxの通信に成功した場合
+                console.log(data);
+
+                //連想配列の長さを得る Object.keysメソッド
+                console.log(Object.keys(data.pref).length);
+                var pref_length = Object.keys(data.pref).length;
+
+                for (var i = 0; i < pref_length; i++) {
+                    $('#pref').append("<option area_code='" + data.pref[i].area_code + "' pref_code='" + data.pref[i].pref_code + "'>" + data.pref[i].pref_name + "</option>")
+
+                }
+
+            }).fail(function (data) { //ajaxの通信に失敗した場合
+                //alert("データの受信に失敗しました");
+            });
+
+        }
+
+        //エリアMのリストをセットするfunction
+        function set_area_list() {
+            $.ajax({
+                url: 'http://javascriptajax.azurewebsites.net/yano/get_area.php?',
+                type: 'GET',
+                dataType: 'json'
+
+            }).done(function (data) { //ajaxの通信に成功した場合
+                console.log(data);
+
+                //取得したデータからフィルタリングをかける
+                //選択された都道府県の状況によってフィルタリングする
+                var pref_code = $('#pref').find('option:selected').attr('pref_code');
+                var filterdata = [];
+
+                filterdata = $.grep(data.garea_middle, function (item) {
+                    return item.pref.pref_code == pref_code;
+                });
+
+                console.log(filterdata);
+
+                //連想配列の長さを得る Object.keysメソッド
+                console.log(Object.keys(filterdata).length);
+                var area_length = Object.keys(filterdata).length;
+
+                $('#area_m').html("");
+                for (var i = 0; i < area_length; i++) {
+                    $('#area_m').append("<option areacode_m='" + filterdata[i].areacode_m + "'>" + filterdata[i].areaname_m + "</option>")
+                }
+
+            }).fail(function (data) { //ajaxの通信に失敗した場合
+               // alert("データの受信に失敗しました");
+            });
+
+        }
+
+
+        //業態（カテゴリL)のリストをセットするfunction
+        function set_category_l_list() {
+            $.ajax({
+                url: 'http://javascriptajax.azurewebsites.net/yano/get_category_l.php?',
+                type: 'GET',
+                dataType: 'json'
+
+            }).done(function (data) { //ajaxの通信に成功した場合
+                console.log(data);
+
+                //連想配列の長さを得る Object.keysメソッド
+                console.log(Object.keys(data.category_l).length);
+                var pref_length = Object.keys(data.category_l).length;
+
+                for (var i = 0; i < pref_length; i++) {
+                    $('#category_l').append("<option category_l_code='" + data.category_l[i].category_l_code + "'>" + data.category_l[i].category_l_name + "</option>")
+                }
+
+            }).fail(function (data) { //ajaxの通信に失敗した場合
+                //alert("データの受信に失敗しました");
+            });
+
+        }
+
+        function search_restrant(pref_code, areacode_m, category_l_code) {
+            //条件に一致するレストランの件数を検索する
+            $.ajax({
+                url: 'http://javascriptajax.azurewebsites.net/yano/get_restrant.php?pref=' + pref_code + '&areacode_m=' + areacode_m + '&category_l=' + category_l_code,
+                type: 'GET',
+                dataType: 'json'
+
+            }).done(function (data) { //ajaxの通信に成功した場合
+
+                //必要なページ数分、レストラン検索を行う
+                var total_hit_count = data.total_hit_count;
+                var hit_per_page = data.hit_per_page;
+                var total_page = Math.ceil(total_hit_count / hit_per_page);
+
+                console.log(total_hit_count);
+                console.log(hit_per_page);
+                console.log(total_page);
+
+                $('#kekka').html("<tr><td>店舗名</td><td>イメ―ジ</td><td>住所,電話番号</td><td>最寄り駅からの距離</td></tr>");
+//                for (var i = 1; i <= total_page; i++) {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                for (var i = 1; i <= 10; i++) {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+                    search_restrant_page(pref_code, areacode_m, category_l_code, i);
+                }
+                $('#result').text("");
+
+                $('#result').append("ヒット件数："+total_hit_count+"件");
+
+            }).fail(function (data) { //ajaxの通信に失敗した場合
+                //alert("データの受信に失敗しました");
+            });
+        }
+
+        var total_count=0;
+        function search_restrant_page(pref_code, areacode_m, category_l_code, offset_page) {
+            $.ajax({
+                url: 'http://javascriptajax.azurewebsites.net/yano/get_restrant_page.php?pref=' + pref_code + '&areacode_m=' + areacode_m + '&category_l=' + category_l_code + '&offset_page=' + offset_page,
+                type: 'GET',
+                dataType: 'json'
+
+            }).done(function (data) { //ajaxの通信に成功した場合
+
+                //連想配列の長さを得る Object.keysメソッド
+                //console.log(Object.keys(data.rest).length);
+                var rest_length = Object.keys(data.rest).length;
+                console.log("★" + rest_length);
+                    var row_data = "";
+                    for (var i = 0; i < rest_length; i++) {
+                        row_data += "<tr>";
+                        row_data += "<td>" + data.rest[i].name + "</td>";
+                        row_data += "<td><img src=" + data.rest[i].image_url.shop_image1 + " width='200px' height='150px' alt='no image'></td>";
+                        row_data += "<td>住所：" + data.rest[i].address + "<br>電話番号：" + data.rest[i].tel + "</td>";
+                        if((data.rest[i].access.station)=="[object Object]"){
+                            row_data +="<td>最寄り駅がありません</td>";
+                            //row_data += "<td>" + data.rest[i].access.line + " " + data.rest[i].access.station + data.rest[i].access.walk + "分</td>";
+                        }else if((data.rest[i].access.walk)=="[object Object]"){
+                            row_data += "<td>" + data.rest[i].access.line + " " + data.rest[i].access.station;
+                        }else{
+                            row_data += "<td>" + data.rest[i].access.line + " " + data.rest[i].access.station + data.rest[i].access.walk + "分</td>";
+                        }
+                        
+                        
+                        row_data += "</tr>";
+                    }
+                    $('#kekka').append(row_data);
+
+                
+            }).fail(function (data) { //ajaxの通信に失敗した場合
+                //alert("データの受信に失敗しました");
+            });
+
+        }
+
+        $(function () {    //←document.ready
+
+            //■ページを読み込んだらすぐ行う
+            //エリアを表示する
+            set_pref_list();
+
+            set_area_list();
+
+            //業態を表示する
+            set_category_l_list();
+
+            //■イベントの割り当て
+            $('#search').on('click', function () {
+                //レストラン検索を行う
+                var pref_code = $('#pref').find('option:selected').attr('pref_code');
+                var category_l_code = $('#category_l').find('option:selected').attr('category_l_code');
+                var areacode_m = $('#area_m').find('option:selected').attr('areacode_m');
+
+                search_restrant(pref_code, areacode_m, category_l_code);
+            })
+
+            $('#pref').on('change', function () {
+                set_area_list();
+            })
+        });
+
+    
+    </script>
+</head>
+<body>
+<h1>グルメ情報検索</h1>
+    <select id="pref"></select>
+    <select id="area_m"></select>
+    <select id="category_l"></select><br>
+
+    <input type="button" id="search" value="検索">
+
+    <div id="result">検索結果↓</div>
+    <table id="kekka" border=1></table>
+
+
+</body>
+</html>
